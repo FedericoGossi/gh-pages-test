@@ -20,7 +20,8 @@ jobs:
       with:
         context: .
         secrets: |
-            "github_token=${{ secrets.ACCESS_TOKEN }}"
+            github_token=${{ secrets.ACCESS_TOKEN }}
+            GIT_AUTH_TOKEN=${{ secrets.ACCESS_TOKEN }}
         push: true
         tags: docker.pkg.github.com/${{ secrets.DOCKER_USERNAME }}/${{ github.repository_name }}streamlit:latest
         build-args: |
