@@ -22,7 +22,7 @@ jobs:
         secrets: |
             github_token=${{ secrets.ACCESS_TOKEN }}
             GIT_AUTH_TOKEN=${{ secrets.ACCESS_TOKEN }}
-        push: true
+        push: false
         tags: docker.pkg.github.com/${{ secrets.DOCKER_USERNAME }}/${{ github.repository_name }}streamlit:latest
         build-args: |
           HTTP_PROXY=${{ secrets.HTTP_PROXY }}
