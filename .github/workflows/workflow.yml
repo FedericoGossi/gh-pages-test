@@ -20,16 +20,14 @@ jobs:
       with:
         context: .
         push: true
-        auth: |
-          {
-            "username": ${{ secrets.DOCKER_USERNAME }},
-            "password": ${{ secrets.DOCKER_PASSWORD }}
-          }
         tags: docker.pkg.github.com/${{ secrets.DOCKER_USERNAME }}/${{ github.repository_name }}streamlit:latest
         build-args: |
           HTTP_PROXY=${{ secrets.HTTP_PROXY }}
           HTTPS_PROXY=${{ secrets.HTTPS_PROXY }}
           NO_PROXY=${{ secrets.NO_PROXY }}
+      env:
+        DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+        DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
     
     - name: Deploy website
       uses: peaceiris/actions-gh-pages@v3
