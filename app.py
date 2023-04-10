@@ -1,16 +1,10 @@
 import streamlit as st
 import matplotlib.pyplot as plt
-from tqdm.auto import tqdm
-from skimage.metrics import peak_signal_noise_ratio
-
-st.title('🎈 App Name')
-
-st.write('Hello world!')
-
-import streamlit as st
+import matplotlib.ticker as ticker
 import numpy as np
 import PIL
 from io import BytesIO
+from tqdm.auto import tqdm
 
 st.title("Signature Background Remover")
 
@@ -69,25 +63,51 @@ if uploaded_file is not None:
     img_bytes.seek(0)
     st.download_button(label="Download", data=img_bytes, file_name="background_remover.png")
 
-    img_gray = bg.convert("L")
-
-    # Apply Fourier transform to the image
-    img_fft = np.fft.fft2(img_gray)
-    
-    # Shift zero-frequency component to center of spectrum
-    f_shift = np.fft.fftshift(img_fft)
-    
-    # Compute magnitude spectrum
-    mag_spec = np.mean(np.abs(f_shift), axis=0)
-    print(mag_spec.shape)
-    
     # Convert to logarithmic scale
     # Display the histogram
+    img = img.convert("RGBA")
+    r, g, b, a = np.array(img).T
+    intensity = 0.299 * r + 0.587 * g + 0.114 * b
+    non_zeros = []
+    xs = np.arange(0, 255)
+    for thr in tqdm(xs):
+      alpha = 1 - np.interp(intensity, 
+                        [0, max(0, 255 - thr - softness), min(255, 255 - thr + softness), 255], 
+                        [0, 0, 1, 1])
+      non_zeros.append((alpha!=0).sum())
+
+    der = lambda arr: [arr[i] - arr[i-1] for i in range(1, len(arr))]
+    non_zeros_2nd_der = der(non_zeros)
     fig, ax = plt.subplots()
-    plt.plot(np.log(mag_spec))
-    plt.xlabel("Frequency")
-    plt.ylabel("Magnitude")
+    # xss = list(range(1, len(non_zeros_2nd_der)+1))
+    xss = list(range(len(non_zeros)))
+    plt.plot(xss, non_zeros)
+    plt.ylabel("Non-transparent pixel count")
+    plt.xlabel("Threshold")
+    
+    
+    argmax = np.argmin(non_zeros_2nd_der)
+    # q = min(non_zeros_2nd_der) * 0.01
+    q = - non_zeros[0] / 255 * 0.1
+    # plt.plot(xss, [q*x + non_zeros[0]*0.1 for x in xss])
+    peak_vals = [i if non_zeros_2nd_der[i] < q else -1 for i in range(len(non_zeros_2nd_der))]
+    # pos = max(peak_vals)+1
+    pos = 255
+    for i in range(np.argmin(non_zeros_2nd_der), len(peak_vals)):
+      if peak_vals[i] == -1 and peak_vals[i-1] != -1:
+        pos = i
+        break
+    plt.axvline(x=pos, ls='--', color='red')
+    # Set the x-axis ticks every 10 units
+    ticklocations = np.arange(0, 256, 10)
+    ax.set_xticks(ticklocations, minor=True)
+    ax.set_xticks(np.arange(0, 256, 50), minor=False)
 
+    # Set the x-axis tick labels to be shown every 50 units
+    ax.set_xticklabels(np.arange(0,256,50))
+    # st.write("q:", q)
+    
     st.pyplot(fig)
-
+    st.write("Suggested threshold:", pos)
+    
     
